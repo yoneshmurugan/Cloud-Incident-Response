@@ -20,33 +20,33 @@
 
 | Metric | Value |
 |:---|:---:|
-| ⚡ Measured MTTR End to End| **43 seconds** |
-| 🔒 Containment Vectors | **3 simultaneous** |
-| 🛑 IAM Resource Wildcards | **0** |
-| 🧪 Idempotency Checks | **3 / 3 actions** |
-| 📦 AWS Services Used | **5** |
+| Measured MTTR End to End| **43 seconds** |
+| Containment Vectors | **3 simultaneous** |
+| IAM Resource Wildcards | **0** |
+| Idempotency Checks | **3 / 3 actions** |
+| AWS Services Used | **5** |
 
 </div>
 
 ---
 
-## 📌 Table of Contents
+## Table of Contents
 
-- [Problem Statement](#-problem-statement)
-- [Architecture](#-architecture)
-- [How It Works](#-how-it-works)
-- [Tech Stack](#-tech-stack)
-- [Repository Structure](#-repository-structure)
-- [Setup & Deployment](#-setup--deployment)
-- [Simulating a Finding](#-simulating-a-finding)
-- [IAM Design — Least Privilege](#-iam-design--least-privilege)
-- [Security Considerations](#-security-considerations)
-- [Measured Results](#-measured-results)
-- [Future Enhancements](#-future-enhancements)
+- [Problem Statement](#problem-statement)
+- [Architecture](#architecture)
+- [How It Works](#how-it-works)
+- [Tech Stack](#tech-stack)
+- [Repository Structure](#repository-structure)
+- [Setup & Deployment](#setup--deployment)
+- [Simulating a Finding](#simulating-a-finding)
+- [IAM Design — Least Privilege](#iam-design--least-privilege)
+- [Security Considerations](#security-considerations)
+- [Measured Results](#measured-results)
+- [Future Enhancements](#future-enhancements)
 
 ---
 
-## 🎯 Problem Statement
+## Problem Statement
 
 When an EC2 instance is compromised — SSH brute force, crypto-mining, C2 callback — the attacker's clock starts immediately. Research shows that lateral movement typically begins **within 15–30 minutes** of initial compromise.
 
@@ -72,7 +72,7 @@ This project automates the entire containment sequence and brings MTTR to **unde
 
 ---
 
-## 🏗️ Architecture
+## Architecture
 
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
@@ -143,7 +143,7 @@ sequenceDiagram
 
 ---
 
-## ⚙️ How It Works
+## How It Works
 
 The pipeline executes three simultaneous containment actions the moment a high-severity GuardDuty finding is detected:
 
@@ -167,7 +167,7 @@ Attaches an **inline Deny-All IAM policy** to the EC2 instance's attached role. 
 
 ---
 
-## 🧰 Tech Stack
+## Tech Stack
 
 | Layer | Technology | Purpose |
 |:---|:---|:---|
@@ -182,7 +182,7 @@ Attaches an **inline Deny-All IAM policy** to the EC2 instance's attached role. 
 
 ---
 
-## 📁 Repository Structure
+## Repository Structure
 
 ```
 Cloud-Incident-Response/
@@ -208,7 +208,7 @@ Cloud-Incident-Response/
 
 ---
 
-## 🚀 Setup & Deployment
+## Setup & Deployment
 
 ### Prerequisites
 
@@ -319,7 +319,7 @@ aws lambda add-permission \
 ![GuardDuty High Severity Finding](images/guardduty-alert.png)
 ---
 
-## 🧪 Simulating a Finding
+## Simulating a Finding
 
 **Option A — Direct Lambda Injection (Precise end-to-end test):**
 
@@ -380,7 +380,7 @@ aws ec2 describe-snapshots --owner-ids self \
 
 ---
 
-## 🔐 IAM Design — Least Privilege
+## IAM Design — Least Privilege
 
 This project deliberately avoids `"Resource": "*"` on sensitive write actions. We separated the generic `Describe*` permissions from the mutation permissions to bypass AWS tag-condition limitations on read operations.
 
@@ -395,7 +395,7 @@ This project deliberately avoids `"Resource": "*"` on sensitive write actions. W
 > Even if the Lambda execution role were compromised, the attacker could **only** act on resources tagged `Project:cloud-ir-pipeline` — the blast radius is contained strictly to this architecture.
 ---
 
-## 🛡️ Security Considerations
+## Security Considerations
 
 **Idempotency** — All three containment actions are safe to call multiple times. EventBridge delivers at-least-once; duplicate invocations produce no side effects.
 
@@ -413,7 +413,7 @@ This project deliberately avoids `"Resource": "*"` on sensitive write actions. W
 
 ---
 
-## 📊 Measured Results
+## Measured Results
 
 | Metric | Baseline (Manual) | This Pipeline |
 |:---|:---:|:---:|
@@ -428,7 +428,7 @@ This project deliberately avoids `"Resource": "*"` on sensitive write actions. W
 
 ---
 
-## 🔭 Future Enhancements
+## Future Enhancements
 
 - [ ] **Multi-account support** — Assume cross-account roles via AWS Organizations for organisation-wide coverage
 - [ ] **AWS SAM / Terraform IaC** — Replace CLI deployment with version-controlled infrastructure templates  
@@ -441,7 +441,7 @@ This project deliberately avoids `"Resource": "*"` on sensitive write actions. W
 
 ---
 
-## 📄 License
+## License
 
 MIT License — see [LICENSE](LICENSE) for details.
 
@@ -450,8 +450,8 @@ MIT License — see [LICENSE](LICENSE) for details.
 <div align="center">
 
 **Built by [Yonesh Murugan](https://linkedin.com/in/yoneshmurugan)**  
-AWS Certified Solutions Architect – Associate (SAA-C03, scored 823/1000)  
-VIT Vellore · Integrated M.Tech — Cybersecurity  
+AWS Certified Solutions Architect – Associate
+VIT Bhopal · Integrated M.Tech — Cybersecurity  
 
 [![LinkedIn](https://img.shields.io/badge/LinkedIn-yoneshmurugan-0A66C2?style=flat-square&logo=linkedin)](https://linkedin.com/in/yoneshmurugan)
 [![GitHub](https://img.shields.io/badge/GitHub-yoneshmurugan-181717?style=flat-square&logo=github)](https://github.com/yoneshmurugan)

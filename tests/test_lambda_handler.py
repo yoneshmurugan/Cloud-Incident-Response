@@ -282,7 +282,7 @@ class TestLambdaHandlerIntegration:
         body = json.loads(result["body"])
         assert "snapshot"  in body, "snapshot key missing from result"
         assert "isolation" in body, "isolation key missing from result"
-        assert "revoke"    in body, "revoke key missing from result"
+        assert "revocation" in body, "revocation key missing from result"
 
     def test_all_three_actions_succeed(self, ec2_instance, iam_role):
         role_name, profile_name = iam_role
