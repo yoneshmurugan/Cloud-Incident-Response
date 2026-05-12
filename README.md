@@ -418,7 +418,7 @@ This project deliberately avoids `"Resource": "*"` on sensitive write actions. W
 | Metric | Baseline (Manual) | This Pipeline |
 |:---|:---:|:---:|
 | Mean Time To Respond (MTTR) End to End | ~45 minutes | **43 seconds** |
-| Mean Time To Respond (MTTR) | ~45 minutes | **43 seconds** |
+| Automated Containment MTTR |  | **2.4 seconds** |
 | Network isolation | Manual console | Automated < 5s |
 | Credential revocation | Manual key rotation | Automated < 5s |
 | Forensic snapshot | Often skipped | Always first |
@@ -434,7 +434,7 @@ This project deliberately avoids `"Resource": "*"` on sensitive write actions. W
 - [ ] **AWS SAM / Terraform IaC** — Replace CLI deployment with version-controlled infrastructure templates  
 - [ ] **Step Functions approval gate** — Human-in-the-loop for instances tagged `critical-production`
 - [ ] **SIEM integration** — Ship findings and IR results to Splunk via Kinesis Firehose
-- [ ] **Unit test suite** — Full coverage using `pytest` + `moto` (AWS mock library)
+- [x] **Unit test suite** — Full coverage using `pytest` + `moto` (AWS mock library)
 - [ ] **Eradication playbooks** — EC2 Systems Manager Run Command for known malware families
 - [ ] **SSM Parameter Store** — Externalise `QUARANTINE_SG_ID` for zero-downtime config updates
 - [ ] **Immutable audit log** — S3 + Object Lock for legal-hold-compliant IR evidence
