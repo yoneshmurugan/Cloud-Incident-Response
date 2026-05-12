@@ -3,6 +3,9 @@ __pycache__/
 *.py[cod]
 *$py.class
 
+#C2 Scripts
+c2_beacon.sh
+
 # C extensions
 *.so
 

@@ -20,7 +20,7 @@
 
 | Metric | Value |
 |:---|:---:|
-| ⚡ Measured MTTR | **43 seconds** |
+| ⚡ Measured MTTR End to End| **43 seconds** |
 | 🔒 Containment Vectors | **3 simultaneous** |
 | 🛑 IAM Resource Wildcards | **0** |
 | 🧪 Idempotency Checks | **3 / 3 actions** |
@@ -334,8 +334,6 @@ cat response.json
 ![Terminal Output](images/terminaloutput.png)
 ![CloudWatch Logs](images/Cloudwatchlog.png)
 
-## 🧪 Simulating a Finding
-
 **Option B — Automated Red Team Attack (Real-world simulation):**
 
 Inject a malicious beacon into a new EC2 instance to trigger a genuine GuardDuty C2 finding. 
@@ -344,7 +342,12 @@ Inject a malicious beacon into a new EC2 instance to trigger a genuine GuardDuty
 ```bash
 cat > c2_beacon.sh << 'EOF'
 #!/bin/bash
-for i in {1..20}; do dig guarddutyc2activityb.com; sleep 30; done
+# Using ping and curl to force DNS resolution (pre-installed on AL2023)
+for i in {1..20}; do 
+    ping -c 1 guarddutyc2activityb.com
+    curl -I -s http://guarddutyc2activityb.com
+    sleep 30
+done
 EOF
 
 aws ec2 run-instances \
@@ -379,17 +382,17 @@ aws ec2 describe-snapshots --owner-ids self \
 
 ## 🔐 IAM Design — Least Privilege
 
-This project deliberately avoids `"Resource": "*"` on any sensitive action.
+This project deliberately avoids `"Resource": "*"` on sensitive write actions. We separated the generic `Describe*` permissions from the mutation permissions to bypass AWS tag-condition limitations on read operations.
 
 | Permission | Scope Strategy |
 |:---|:---|
-| `ec2:CreateSnapshot`, `ec2:ModifyInstanceAttribute` | Condition key: `aws:ResourceTag/Project = cloud-ir-pipeline` |
-| `iam:PutRolePolicy`, `iam:GetRolePolicy` | Resource ARN pattern: `arn:aws:iam::*:role/IR-TargetInstance-*` |
+| `ec2:Describe*` | Unconditional (Required, as IAM cannot apply Tag Conditions to Describe actions) |
+| `ec2:CreateSnapshot`, `ec2:ModifyInstanceAttribute`, `ec2:CreateTags` | Condition key: `aws:ResourceTag/Project = cloud-ir-pipeline` |
+| `iam:PutRolePolicy`, `iam:GetRolePolicy`, `iam:GetInstanceProfile` | Resource ARN pattern: `arn:aws:iam::*:role/IR-TargetInstance-*` and `arn:aws:iam::*:instance-profile/*` |
 | `logs:PutLogEvents` | Specific log group ARN: `/aws/lambda/IR-Responder` |
 | `guardduty:GetFindings` | Account-wide (read-only, no sensitive data modification) |
 
-> Even if the Lambda execution role were compromised, the attacker could **only** act on resources tagged `Project:cloud-ir-pipeline` — the blast radius is contained to this lab environment.
-
+> Even if the Lambda execution role were compromised, the attacker could **only** act on resources tagged `Project:cloud-ir-pipeline` — the blast radius is contained strictly to this architecture.
 ---
 
 ## 🛡️ Security Considerations
@@ -414,6 +417,7 @@ This project deliberately avoids `"Resource": "*"` on any sensitive action.
 
 | Metric | Baseline (Manual) | This Pipeline |
 |:---|:---:|:---:|
+| Mean Time To Respond (MTTR) End to End | ~45 minutes | **43 seconds** |
 | Mean Time To Respond (MTTR) | ~45 minutes | **43 seconds** |
 | Network isolation | Manual console | Automated < 5s |
 | Credential revocation | Manual key rotation | Automated < 5s |
