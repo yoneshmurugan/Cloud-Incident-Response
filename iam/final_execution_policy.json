@@ -1,0 +1,56 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "CloudWatchLogsWrite",
+      "Effect": "Allow",
+      "Action": ["logs:CreateLogGroup", "logs:CreateLogStream", "logs:PutLogEvents"],
+      "Resource": "arn:aws:logs:*:*:log-group:/aws/lambda/IR-Responder:*"
+    },
+    {
+      "Sid": "EC2DescribeAndSnapshot",
+      "Effect": "Allow",
+      "Action": [
+        "ec2:DescribeInstances",
+        "ec2:DescribeVolumes",
+        "ec2:DescribeSecurityGroups",
+        "ec2:DescribeSnapshots",
+        "ec2:CreateSnapshot",
+        "ec2:CreateTags"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "EC2Isolation",
+      "Effect": "Allow",
+      "Action": [
+        "ec2:ModifyInstanceAttribute"
+      ],
+      "Resource": "*",
+      "Condition": {
+        "StringEquals": {
+          "aws:ResourceTag/Project": "cloud-ir-pipeline"
+        }
+      }
+    },
+    {
+      "Sid": "IAMCredentialRevocation",
+      "Effect": "Allow",
+      "Action": [
+        "iam:PutRolePolicy",
+        "iam:GetRolePolicy",
+        "iam:GetInstanceProfile"
+      ],
+      "Resource": [
+        "arn:aws:iam::*:role/IR-TargetInstance-*",
+        "arn:aws:iam::*:instance-profile/IR-TargetInstance-*"
+      ]
+    },
+    {
+      "Sid": "GuardDutyReadForContext",
+      "Effect": "Allow",
+      "Action": ["guardduty:GetFindings", "guardduty:ListDetectors"],
+      "Resource": "*"
+    }
+  ]
+}

@@ -1,0 +1,18 @@
+{
+  "detail-type": "GuardDuty Finding",
+  "source": "aws.guardduty",
+  "detail": {
+    "id": "simulated-finding-123",
+    "severity": 7.8,
+    "type": "UnauthorizedAccess:EC2/SSHBruteForce",
+    "resource": {
+      "resourceType": "Instance",
+      "instanceDetails": {
+        "instanceId": "i-051d2004f58efc361",
+        "iamInstanceProfile": {
+          "arn": "arn:aws:iam::092100464947:instance-profile/IR-TargetInstance-WebServer-Profile"
+        }
+      }
+    }
+  }
+}
