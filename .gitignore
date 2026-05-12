@@ -5,6 +5,7 @@ __pycache__/
 
 #C2 Scripts
 c2_beacon.sh
+response.json
 
 # C extensions
 *.so
