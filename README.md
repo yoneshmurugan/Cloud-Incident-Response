@@ -185,14 +185,15 @@ Attaches an **inline Deny-All IAM policy** to the EC2 instance's attached role. 
 ## 📁 Repository Structure
 
 ```
-cloud-ir-pipeline/
+Cloud-Incident-Response/
 │
 ├── src/
-│   └── lambda_handler.py        # Core Lambda function (4 handlers, ~130 lines)
+│   └── lambda_handler.py        # Core Lambda function
 │
 ├── iam/
+│   ├── ec2-trust.json      # Who can assume the execution role
 │   ├── lambda_trust_policy.json      # Who can assume the execution role
-│   ├── lambda_execution_role.json    # Least-privilege permissions (tag-scoped)
+│   ├── lambda_execution_policy.json    # Least-privilege permissions (tag-scoped)
 │   └── eventbridge_pattern.json      # GuardDuty finding filter pattern
 │
 ├── docs/
@@ -201,6 +202,7 @@ cloud-ir-pipeline/
 ├── tests/
 │   └── test_lambda_handler.py   # Unit tests using moto (AWS mock library)
 │
+├── lambda_payload.json
 └── README.md
 ```
 
@@ -240,23 +242,44 @@ aws ec2 create-security-group \
   --vpc-id $VPC_ID \
   --tag-specifications "ResourceType=security-group,Tags=[{Key=Project,Value=cloud-ir-pipeline}]"
 ```
+![Quarantine Security Group Rules](images/quarantine-sg.png)
 
-### Phase 2 — Enable GuardDuty
+### Phase 2 — GuardDuty & Victim EC2 Instance
 
 ```bash
+# 1. Enable GuardDuty and capture the Detector ID
 aws guardduty create-detector \
   --enable \
   --finding-publishing-frequency FIFTEEN_MINUTES
 
 export DETECTOR_ID=$(aws guardduty list-detectors \
   --query DetectorIds[0] --output text)
+
+# 2. Get the latest Amazon Linux 2023 AMI ID
+export AMI_ID=$(aws ec2 describe-images \
+  --owners amazon \
+  --filters 'Name=name,Values=al2023-ami-*-x86_64' \
+  --query 'sort_by(Images, &CreationDate)[-1].ImageId' \
+  --output text)
+
+# 3. Launch the Victim EC2 Instance (Strictly tagged for IAM conditions)
+aws ec2 run-instances \
+  --image-id $AMI_ID \
+  --instance-type t3.micro \
+  --associate-public-ip-address \
+  --iam-instance-profile Name=IR-TargetInstance-WebServer-Profile \
+  --tag-specifications \
+  'ResourceType=instance,Tags=[{Key=Name,Value=IR-VictimInstance},{Key=Project,Value=cloud-ir-pipeline},{Key=Environment,Value=lab}]' \
+  'ResourceType=volume,Tags=[{Key=Project,Value=cloud-ir-pipeline}]' \
+  --count 1
 ```
+![Target EC2 Instance Config](images/ec2-instance.png)
 
 ### Phase 3 — Deploy Lambda
 
 ```bash
-# Package
-cd src && zip -r ../ir_lambda.zip lambda_handler.py && cd ..
+# Package (Windows / Git Bash compatible using PowerShell)
+powershell -command "Compress-Archive -Path src/lambda_handler.py -DestinationPath ir_lambda.zip -Force"
 
 # Deploy
 aws lambda create-function \
@@ -269,6 +292,7 @@ aws lambda create-function \
   --environment Variables={QUARANTINE_SG_ID=sg-XXXXXXXXXXXXXXXX} \
   --tags Project=cloud-ir-pipeline
 ```
+![Lambda Function Overview](images/lambda-overview.png)
 
 ### Phase 4 — Wire EventBridge
 
@@ -292,36 +316,52 @@ aws lambda add-permission \
   --principal events.amazonaws.com \
   --source-arn arn:aws:events:REGION:ACCOUNT_ID:rule/IR-GuardDuty-HighSeverity
 ```
-
+![GuardDuty High Severity Finding](images/guardduty-alert.png)
 ---
 
 ## 🧪 Simulating a Finding
 
-**Option A — GuardDuty sample generator:**
+**Option A — Direct Lambda Injection (Precise end-to-end test):**
 
 ```bash
-aws guardduty create-sample-findings \
-  --detector-id $DETECTOR_ID \
-  --finding-types UnauthorizedAccess:EC2/SSHBruteForce
+aws lambda invoke \
+  --function-name IR-Responder \
+  --payload fileb://lambda_payload.json \
+  response.json
+
+cat response.json
 ```
+![Terminal Output](images/terminaloutput.png)
+![CloudWatch Logs](images/Cloudwatchlog.png)
 
-**Option B — Direct EventBridge injection (precise end-to-end test):**
+## 🧪 Simulating a Finding
+
+**Option B — Automated Red Team Attack (Real-world simulation):**
+
+Inject a malicious beacon into a new EC2 instance to trigger a genuine GuardDuty C2 finding. 
+*(Note: GuardDuty takes 10-15 minutes to process DNS logs and publish the alert).*
 
 ```bash
-aws events put-events --entries '[{
-  "Source": "aws.guardduty",
-  "DetailType": "GuardDuty Finding",
-  "Detail": "{\"severity\":7.8,\"type\":\"UnauthorizedAccess:EC2/SSHBruteForce\",
-              \"resource\":{\"resourceType\":\"Instance\",
-              \"instanceDetails\":{\"instanceId\":\"YOUR_INSTANCE_ID\"}}}"
-}]'
+cat > c2_beacon.sh << 'EOF'
+#!/bin/bash
+for i in {1..20}; do dig guarddutyc2activityb.com; sleep 30; done
+EOF
+
+aws ec2 run-instances \
+  --image-id $AMI_ID \
+  --instance-type t3.micro \
+  --associate-public-ip-address \
+  --iam-instance-profile Name=IR-TargetInstance-WebServer-Profile \
+  --tag-specifications 'ResourceType=instance,Tags=[{Key=Name,Value=IR-Victim-Automated},{Key=Project,Value=cloud-ir-pipeline}]' 'ResourceType=volume,Tags=[{Key=Project,Value=cloud-ir-pipeline}]' \
+  --user-data file://c2_beacon.sh \
+  --count 1
 ```
 
 **Verify the pipeline ran:**
 
 ```bash
-# Stream live Lambda logs
-aws logs tail /aws/lambda/IR-Responder --follow
+# Stream live Lambda logs (MSYS_NO_PATHCONV bypasses Git Bash path translation errors)
+MSYS_NO_PATHCONV=1 aws logs tail /aws/lambda/IR-Responder
 
 # Confirm SG was swapped to quarantine
 aws ec2 describe-instances --instance-ids $INSTANCE_ID \
