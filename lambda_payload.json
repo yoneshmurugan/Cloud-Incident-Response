@@ -8,7 +8,7 @@
     "resource": {
       "resourceType": "Instance",
       "instanceDetails": {
-        "instanceId": "i-051d2004f58efc361",
+        "instanceId": "i-0bb72a785c6061c4f",
         "iamInstanceProfile": {
           "arn": "arn:aws:iam::092100464947:instance-profile/IR-TargetInstance-WebServer-Profile"
         }

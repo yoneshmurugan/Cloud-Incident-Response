@@ -1,1 +1,1 @@
-{"statusCode": 200, "body": "{\"revocation\": \"ALREADY_REVOKED\", \"isolation\": \"ALREADY_ISOLATED\", \"snapshot\": \"SNAPSHOTS:['snap-083e6c8f3f94ef8bb']\"}"}
+{"statusCode": 200, "body": "{\"snapshot\": \"SNAPSHOTS:['snap-0dd530079bcc2f08a']\", \"revocation\": \"REVOKED: IR-TargetInstance-WebServer\", \"isolation\": \"ISOLATED: sg-0da2157ca0d6e632f\"}"}
